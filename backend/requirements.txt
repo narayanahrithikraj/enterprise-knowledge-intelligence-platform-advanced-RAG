@@ -1,0 +1,15 @@
+langchain
+langchain-community
+langchain-core
+langchain-openai
+chromadb
+pydantic-settings
+uvloop
+watchfiles
+rank_bm25
+fastapi==0.110.0
+uvicorn==0.28.0
+pydantic==2.6.4
+sqlalchemy==2.0.28
+psycopg2-binary==2.9.9
+python-multipart==0.0.9

@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: enterprise_password_2026
+      POSTGRES_DB: enterprise_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - platform_network
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Clear isolation boundary separating vector storage from other service volumes
+      - chroma_vector_data:/app/chroma_vector_db
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:enterprise_password_2026@db:5432/enterprise_db
+    networks:
+      platform_network:
+        aliases:
+          - backend
+    depends_on:
+      - db
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "8501:8501"
+    networks:
+      - platform_network
+    depends_on:
+      - backend
+    restart: always
+
+networks:
+  platform_network:
+    driver: bridge
+
+volumes:
+  chroma_vector_data:
+  postgres_data:

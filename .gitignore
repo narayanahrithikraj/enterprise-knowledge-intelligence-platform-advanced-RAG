@@ -1,0 +1,15 @@
+# Python environment caches
+__pycache__/
+*.pyc
+.venv/
+venv311/
+
+# Local databases and persistence layers
+*.db
+platform_persistence.db
+postgres_data/
+chroma_vector_data/
+
+# Environment configurations and secret keys
+.env
+.env.production
