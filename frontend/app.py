@@ -83,6 +83,14 @@ if st.session_state.token is None:
             visibility: hidden !important;
             display: none !important;
         }
+        
+        /* 🛠️ NEW FIX: Completely wipe out the bottom right floating Streamlit Cloud manage button */
+        #streamlitAppPortalsContainer, .stAppDeployButton, div[class^="st-emotion-cache"] > button[title="Manage app"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
 
         [data-testid="stHorizontalBlock"] {
             margin-top: 3vh !important; 
@@ -419,7 +427,7 @@ else:
                             else: st.caption("Active Session")
             except Exception as e: st.error(f"User list fetch failure: {e}")
 
-            # --- 🛠widget OPTIMIZED: EXECUTIVE PASSWORD OVERRIDE PANEL ---
+            # --- 🛠️ OPTIMIZED: EXECUTIVE PASSWORD OVERRIDE PANEL ---
             st.write("---")
             st.markdown("### ⚙️ Executive Account Override Actions")
             st.caption("Perform direct, privileged root mutations across the live database profile registers.")
