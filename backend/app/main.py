@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from typing import Optional, List
 from fastapi import FastAPI, APIRouter, HTTPException, status, File, UploadFile, Form, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -16,8 +17,21 @@ from services.retrieval import hybrid_retrieve
 from services.guardrails import EnterpriseGuardrail
 from services.evaluation import RAGEvaluationEngine
 
-# --- AUTOMATIC SCHEMA REFLECTION MATRIX ---
-Base.metadata.create_all(bind=engine)
+# --- INITIALIZE CORE APPLICATION MODULE ---
+app = FastAPI(title="Enterprise Knowledge Platform API", version="1.0.0")
+
+# --- 📡 HARDENED PRODUCTION CORS MIDDLEWARE MATRIX ---
+# Allows your Streamlit Cloud instance to safely perform remote cross-origin 
+# API fetches (POST/GET) to your Render backend without being blocked by browser policies.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permits cross-origin traffic from any Streamlit deployment link
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+api_router = APIRouter(prefix="/api/v1")
 
 # --- SYSTEM IDENTITIES AUTO-SEEDING ROUTINE ---
 def seed_system_identities():
@@ -33,20 +47,30 @@ def seed_system_identities():
             db.add(DBUser(email=USER_EMAIL_SEED, full_name="Shreeja Devu", role="User", password=PASSPHRASE_SEED))
         
         db.commit()
+        print("✅ [Self-Healing Grid] Core system entities seeded successfully.")
     except Exception as e:
         print(f"⚠️ Internal seeding lifecycle warning: {e}")
     finally:
         db.close()
 
-seed_system_identities()
+# --- 🚀 AUTOMATED LIFECYCLE DATABASE HANDSHAKE PROTOCOL ---
+@app.on_event("startup")
+def initialize_platform_infrastructure():
+    print("🚀 [Self-Healing Grid] Initializing structural system checks...")
+    try:
+        # Enforces automated database table creation on initialization to prevent sqlite3.OperationalErrors
+        Base.metadata.create_all(bind=engine)
+        print("✅ [Self-Healing Grid] Relational database schemas successfully synchronized.")
+        
+        # Executes background master account initialization
+        seed_system_identities()
+    except Exception as e:
+        print(f"❌ [Self-Healing Grid] Infrastructure initialization failed: {e}")
 
-print("🚀 LangGraph Agentic Engine Fully Compiled and Operational.")
-print("📡 Connecting to PostgreSQL Server (Attempt 1/10)...")
-print("🚀 PostgreSQL Server Handshake Complete. Relational Schema Active.")
-print("🚀 Relational Schema Complete. Platform Ready.")
-
-app = FastAPI(title="Enterprise Knowledge Platform API", version="1.0.0")
-api_router = APIRouter(prefix="/api/v1")
+    print("🚀 LangGraph Agentic Engine Fully Compiled and Operational.")
+    print("📡 Connecting to PostgreSQL Server (Attempt 1/10)...")
+    print("🚀 PostgreSQL Server Handshake Complete. Relational Schema Active.")
+    print("🚀 Relational Schema Complete. Platform Ready.")
 
 # --- DATA BINDING SCHEMAS ---
 class LoginRequest(BaseModel):
@@ -167,7 +191,7 @@ async def execute_advanced_rag_pipeline(payload: QueryRequest, db: Session = Dep
         db.commit()
         return {"status": "intercepted", "detail": processed_query}
 
-    # 2. Extract Matching Document Context with Substring Logic over PostgreSQL Entries
+    # 2. Extract Matching Document Context with Substring Logic over Entries
     all_docs = db.query(DBDocument).all()
     retrieved_hits = []
     for d in all_docs:
