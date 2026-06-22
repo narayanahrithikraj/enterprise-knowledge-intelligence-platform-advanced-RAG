@@ -16,10 +16,10 @@ if "user_name" not in st.session_state: st.session_state.user_name = None
 if "user_role" not in st.session_state: st.session_state.user_role = None
 if "active_session_id" not in st.session_state: st.session_state.active_session_id = None
 
-# --- GLOBAL SYSTEM UI HIGHLIGHTING & TARGETED REMOVAL ---
+# --- GLOBAL SYSTEM UI HIGHLIGHTING & TARGETED REMOVAL (APPLIES EVERYWHERE) ---
 st.markdown("""
 <style>
-    /* 🛡️ TARGETED REMOVAL: Hide ONLY GitHub specific utilities (Star & Edit options) from Toolbar */
+    /* 🛡️ TARGETED REMOVAL: Permanently hide GitHub specific utilities (Star & Edit options) everywhere */
     div[data-testid="stAppToolbar"] a[href*="github.com"] {
         display: none !important;
     }
@@ -27,15 +27,7 @@ st.markdown("""
         display: none !important;
     }
     
-    /* 🛡️ TARGETED REMOVAL: Hide the injected GitHub repository notice links from the Main Tab Content Panel */
-    div[data-testid="stVerticalBlock"] a[href*="github.com"] {
-        display: none !important;
-    }
-    div[data-testid="stMarkdownContainer"] a[href*="github.com"] {
-        display: none !important;
-    }
-    
-    /* Hide the bottom footer text block */
+    /* Hide the bottom footer text block globally */
     footer {
         visibility: hidden !important;
         display: none !important;
