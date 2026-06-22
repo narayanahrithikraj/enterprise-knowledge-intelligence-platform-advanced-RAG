@@ -29,7 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# FIXED: Removed the prefix="/api/v1" parameter so endpoints match frontend calls perfectly
 api_router = APIRouter()
 
 # --- SYSTEM IDENTITIES AUTO-SEEDING ROUTINE ---
@@ -37,16 +36,14 @@ def seed_system_identities():
     db = next(get_db())
     try:
         ADMIN_EMAIL_SEED = os.getenv("MASTER_ADMIN_EMAIL", "n.hrithikraj2001@gmail.com")
-        USER_EMAIL_SEED = os.getenv("MASTER_USER_EMAIL", "shreejadevu@gmail.com")
         PASSPHRASE_SEED = os.getenv("DEFAULT_SYSTEM_PASSWORD", "password123")
 
+        # Seeds ONLY the primary Admin profile
         if not db.query(DBUser).filter(DBUser.email == ADMIN_EMAIL_SEED).first():
             db.add(DBUser(email=ADMIN_EMAIL_SEED, full_name="Narayana Hrithik Raj", role="Admin", password=PASSPHRASE_SEED))
-        if not db.query(DBUser).filter(DBUser.email == USER_EMAIL_SEED).first():
-            db.add(DBUser(email=USER_EMAIL_SEED, full_name="Shreeja Devu", role="User", password=PASSPHRASE_SEED))
         
         db.commit()
-        print("✅ [Self-Healing Grid] Core system entities seeded successfully.")
+        print("✅ [Self-Healing Grid] Core admin identity synchronized successfully.")
     except Exception as e:
         print(f"⚠️ Internal seeding lifecycle warning: {e}")
     finally:
