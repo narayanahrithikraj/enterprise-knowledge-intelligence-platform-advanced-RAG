@@ -16,23 +16,9 @@ if "user_name" not in st.session_state: st.session_state.user_name = None
 if "user_role" not in st.session_state: st.session_state.user_role = None
 if "active_session_id" not in st.session_state: st.session_state.active_session_id = None
 
-# --- GLOBAL SYSTEM UI HIGHLIGHTING & TARGETED REMOVAL (APPLIES EVERYWHERE) ---
+# --- GLOBAL SYSTEM UI HIGHLIGHTING INJECTION ---
 st.markdown("""
 <style>
-    /* 🛡️ TARGETED REMOVAL: Permanently hide GitHub specific utilities (Star & Edit options) everywhere */
-    div[data-testid="stAppToolbar"] a[href*="github.com"] {
-        display: none !important;
-    }
-    header[data-testid="stHeader"] a[href*="github.com"] {
-        display: none !important;
-    }
-    
-    /* Hide the bottom footer text block globally */
-    footer {
-        visibility: hidden !important;
-        display: none !important;
-    }
-
     /* Premium green glow highlight for validated, active submit buttons */
     div.stButton > button:enabled, .auth-btn-container button.activated-glow {
         background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important; 
@@ -81,10 +67,23 @@ def is_valid_email(email: str) -> bool:
     pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return bool(re.match(pattern, email))
 
-# --- 2️⃣ IDENTITY VERIFICATION WORKSPACE LAYER (LOGGED OUT STATE) ---
+# ======================================================================================
+# 🔒 PHASE 1: IDENTITY GATEWAY LAYER (LOGGED OUT STATE)
+# ======================================================================================
 if st.session_state.token is None:
     st.markdown("""
     <style>
+        /* 🛡️ CONDITIONALLY HIDE TOP OPTIONS ROW ONLY ON LOGIN / REGISTER PAGE */
+        header[data-testid="stHeader"] {
+            display: none !important;
+        }
+        
+        /* Hide the bottom footer text block on the login view */
+        footer {
+            visibility: hidden !important;
+            display: none !important;
+        }
+
         [data-testid="stHorizontalBlock"] {
             margin-top: 3vh !important; 
             padding-bottom: 2vh !important;
@@ -232,7 +231,9 @@ if st.session_state.token is None:
                             else: st.error("❌ Registration rejected: Profile identity already exists.")
                         except Exception as e: st.error(f"Handshake error: {e}")
 
-# --- 3️⃣ NATIVE PLATFORM WORKSPACE VIEW (LOGGED IN STATE) ---
+# ======================================================================================
+# 🚀 PHASE 2: NATIVE PLATFORM WORKSPACE VIEW (LOGGED IN STATE)
+# ======================================================================================
 else:
     auth_headers = {"Authorization": f"Bearer {st.session_state.token}"}
     with st.sidebar:
@@ -418,7 +419,7 @@ else:
                             else: st.caption("Active Session")
             except Exception as e: st.error(f"User list fetch failure: {e}")
 
-            # --- 🛠️ OPTIMIZED: EXECUTIVE PASSWORD OVERRIDE PANEL ---
+            # --- 🛠widget OPTIMIZED: EXECUTIVE PASSWORD OVERRIDE PANEL ---
             st.write("---")
             st.markdown("### ⚙️ Executive Account Override Actions")
             st.caption("Perform direct, privileged root mutations across the live database profile registers.")
