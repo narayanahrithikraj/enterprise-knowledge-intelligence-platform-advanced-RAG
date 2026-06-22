@@ -8,11 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-# FIXED: Added the app. namespace path qualifiers for absolute container resolution
+# Absolute container paths for structural resource mapping
 from app.db.session import engine, get_db
 from app.db.models import Base, DBUser, DBDocument, DBChatSession, DBChatMessage, DBKnowledgeGap
 
-# Import specialized platform processing modules
+# Specialized platform processing engines
 from services.retrieval import hybrid_retrieve
 from services.guardrails import EnterpriseGuardrail
 from services.evaluation import RAGEvaluationEngine
@@ -21,17 +21,16 @@ from services.evaluation import RAGEvaluationEngine
 app = FastAPI(title="Enterprise Knowledge Platform API", version="1.0.0")
 
 # --- 📡 HARDENED PRODUCTION CORS MIDDLEWARE MATRIX ---
-# Allows your Streamlit Cloud instance to safely perform remote cross-origin 
-# API fetches (POST/GET) to your Render backend without being blocked by browser policies.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permits cross-origin traffic from any Streamlit deployment link
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-api_router = APIRouter(prefix="/api/v1")
+# FIXED: Removed the prefix="/api/v1" parameter so endpoints match frontend calls perfectly
+api_router = APIRouter()
 
 # --- SYSTEM IDENTITIES AUTO-SEEDING ROUTINE ---
 def seed_system_identities():
@@ -58,11 +57,8 @@ def seed_system_identities():
 def initialize_platform_infrastructure():
     print("🚀 [Self-Healing Grid] Initializing structural system checks...")
     try:
-        # Enforces automated database table creation on initialization to prevent sqlite3.OperationalErrors
         Base.metadata.create_all(bind=engine)
         print("✅ [Self-Healing Grid] Relational database schemas successfully synchronized.")
-        
-        # Executes background master account initialization
         seed_system_identities()
     except Exception as e:
         print(f"❌ [Self-Healing Grid] Infrastructure initialization failed: {e}")
@@ -183,7 +179,6 @@ async def execute_advanced_rag_pipeline(payload: QueryRequest, db: Session = Dep
     target_session = payload.session_id or "session_1"
     q_low = raw_prompt.lower()
 
-    # 1. Run Input Security Compliance Filters
     is_safe, processed_query = EnterpriseGuardrail.process_incoming_query(raw_prompt)
     if not is_safe:
         db.add(DBChatMessage(id=uuid.uuid4().hex[:12], session_id=target_session, role="user", content=raw_prompt))
@@ -191,7 +186,6 @@ async def execute_advanced_rag_pipeline(payload: QueryRequest, db: Session = Dep
         db.commit()
         return {"status": "intercepted", "detail": processed_query}
 
-    # 2. Extract Matching Document Context with Substring Logic over Entries
     all_docs = db.query(DBDocument).all()
     retrieved_hits = []
     for d in all_docs:
@@ -202,7 +196,6 @@ async def execute_advanced_rag_pipeline(payload: QueryRequest, db: Session = Dep
 
     citations_ledger = [{"file": d.filename, "snippet": d.text[:120] + "..."} for d in retrieved_hits]
 
-    # 3. Process Conversational/Contextual Response Generation Loop
     if any(w in q_low for w in ["hi", "hello", "hey", "greetings"]):
         generated_answer = "👋 **Welcome to the Enterprise Knowledge Portal.** I am your secure corporate intelligence agent. How can I surface repository insights for you today?"
         
@@ -230,7 +223,6 @@ async def execute_advanced_rag_pipeline(payload: QueryRequest, db: Session = Dep
                     timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 ))
 
-    # Commit message records down to transactional message boards
     db.add(DBChatMessage(id=uuid.uuid4().hex[:12], session_id=target_session, role="user", content=raw_prompt))
     db.add(DBChatMessage(
         id=uuid.uuid4().hex[:12], 
