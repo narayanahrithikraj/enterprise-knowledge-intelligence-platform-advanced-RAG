@@ -16,9 +16,20 @@ if "user_name" not in st.session_state: st.session_state.user_name = None
 if "user_role" not in st.session_state: st.session_state.user_role = None
 if "active_session_id" not in st.session_state: st.session_state.active_session_id = None
 
-# --- GLOBAL SYSTEM UI HIGHLIGHTING INJECTION ---
+# --- GLOBAL SYSTEM UI HIGHLIGHTING & REMOVAL INJECTION ---
 st.markdown("""
 <style>
+    /* 🛠️ REMOVE STREAMLIT CLOUD HEADER & VISUAL UTILITIES (Star, Edit, Menu) */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    
+    /* Hide the bottom footer text block */
+    footer {
+        visibility: hidden !important;
+        display: none !important;
+    }
+
     /* Premium green glow highlight for validated, active submit buttons */
     div.stButton > button:enabled, .auth-btn-container button.activated-glow {
         background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important; 
@@ -71,12 +82,6 @@ def is_valid_email(email: str) -> bool:
 if st.session_state.token is None:
     st.markdown("""
     <style>
-        [data-testid="stHeader"] [data-testid="stStatusWidget"],
-        [data-testid="stHeader"] iframe,
-        [data-testid="stHeader"] button,
-        header button {
-            display: none !important;
-        }
         [data-testid="stHorizontalBlock"] {
             margin-top: 3vh !important; 
             padding-bottom: 2vh !important;
@@ -394,7 +399,6 @@ else:
                         with u_col3: st.info(f"Clearance Identity: {u['role']}")
                         with u_col4:
                             if u['email'] != st.session_state.user_email:
-                                # FIXED: Re-wired row Revoke button to route through robust backend post delete handler seamlessly
                                 if st.button("Revoke", key=f"usr_{u['id']}", width="stretch"):
                                     payload = {
                                         "admin_email": st.session_state.user_email,
@@ -416,7 +420,6 @@ else:
             st.markdown("### ⚙️ Executive Account Override Actions")
             st.caption("Perform direct, privileged root mutations across the live database profile registers.")
 
-            # Render password utility as a focused master module since profile purges are handled via Revoke keys
             with st.container(border=True):
                 st.markdown("#### 🔑 Administrative Password Override")
                 target_user_reset = st.text_input("Target Account Email", key="admin_reset_email_field", placeholder="user@company.com")
