@@ -394,70 +394,52 @@ else:
                         with u_col3: st.info(f"Clearance Identity: {u['role']}")
                         with u_col4:
                             if u['email'] != st.session_state.user_email:
+                                # FIXED: Re-wired row Revoke button to route through robust backend post delete handler seamlessly
                                 if st.button("Revoke", key=f"usr_{u['id']}", width="stretch"):
-                                    if requests.delete(f"{BACKEND_URL}/admin/users/{u['id']}", headers=auth_headers, timeout=5).status_code == 200: st.success("Revoked!"); st.rerun()
+                                    payload = {
+                                        "admin_email": st.session_state.user_email,
+                                        "target_email": u['email']
+                                    }
+                                    with st.spinner("Purging record..."):
+                                        del_res = requests.post(f"{BACKEND_URL}/admin/users/delete", json=payload, timeout=5)
+                                        if del_res.status_code == 200: 
+                                            st.success("Revoked!")
+                                            time.sleep(0.5)
+                                            st.rerun()
+                                        else:
+                                            st.error("Action denied.")
                             else: st.caption("Active Session")
             except Exception as e: st.error(f"User list fetch failure: {e}")
 
-            # --- 🛠️ NEW: EXECUTIVE ACCOUNT OVERRIDE CONTROL PANELS ---
+            # --- 🛠️ OPTIMIZED: EXECUTIVE PASSWORD OVERRIDE PANEL ---
             st.write("---")
             st.markdown("### ⚙️ Executive Account Override Actions")
             st.caption("Perform direct, privileged root mutations across the live database profile registers.")
 
-            panel_col1, panel_col2 = st.columns(2)
-
-            # 🔑 Panel Component A: Force Reset Password Tool
-            with panel_col1:
-                with st.container(border=True):
-                    st.markdown("#### 🔑 Administrative Password Override")
-                    target_user_reset = st.text_input("Target Account Email", key="admin_reset_email_field", placeholder="user@company.com")
-                    new_password_input = st.text_input("New Core Password Value", key="admin_reset_pass_field", type="password", placeholder="••••••••")
-                    
-                    if st.button("Force Relational Rotation", use_container_width=True, key="exec_pass_rotation_btn"):
-                        if target_user_reset and new_password_input:
-                            payload = {
-                                "admin_email": st.session_state.user_email,
-                                "target_email": target_user_reset.strip().lower(),
-                                "new_password": new_password_input
-                            }
-                            with st.spinner("Overwriting encryption fields..."):
-                                try:
-                                    reset_res = requests.post(f"{BACKEND_URL}/admin/users/reset-password", json=payload, timeout=5)
-                                    if reset_res.status_code == 200:
-                                        st.success(f"✅ Modified: {reset_res.json()['message']}")
-                                    else:
-                                        st.error(f"❌ Rejected: {reset_res.json().get('detail', 'Override blocked.')}")
-                                except Exception as err:
-                                    st.error(f"API Hook Malfunction: {err}")
-                        else:
-                            st.warning("Please define both target identity email and password properties.")
-
-            # 🚨 Panel Component B: Permanent Account Purge Tool
-            with panel_col2:
-                with st.container(border=True):
-                    st.markdown("#### 🚨 Permanent Account Purge Matrix")
-                    target_user_delete = st.text_input("Target Account Email", key="admin_delete_email_field", placeholder="user@company.com")
-                    st.write("") # Strategic visual vertical spacer alignment alignment 
-                    
-                    if st.button("Execute Hard Account Purge", type="primary", use_container_width=True, key="exec_profile_purge_btn"):
-                        if target_user_delete:
-                            payload = {
-                                "admin_email": st.session_state.user_email,
-                                "target_email": target_user_delete.strip().lower()
-                            }
-                            with st.spinner("Executing cascade deletion..."):
-                                try:
-                                    delete_res = requests.post(f"{BACKEND_URL}/admin/users/delete", json=payload, timeout=5)
-                                    if delete_res.status_code == 200:
-                                        st.success(f"✅ Purged: {delete_res.json()['message']}")
-                                        time.sleep(0.8)
-                                        st.rerun()
-                                    else:
-                                        st.error(f"❌ Rejected: {delete_res.json().get('detail', 'Purge denied.')}")
-                                except Exception as err:
-                                    st.error(f"API Hook Malfunction: {err}")
-                        else:
-                            st.warning("Please declare a valid target email to execute the deletion.")
+            # Render password utility as a focused master module since profile purges are handled via Revoke keys
+            with st.container(border=True):
+                st.markdown("#### 🔑 Administrative Password Override")
+                target_user_reset = st.text_input("Target Account Email", key="admin_reset_email_field", placeholder="user@company.com")
+                new_password_input = st.text_input("New Core Password Value", key="admin_reset_pass_field", type="password", placeholder="••••••••")
+                
+                if st.button("Force Relational Rotation", use_container_width=True, key="exec_pass_rotation_btn"):
+                    if target_user_reset and new_password_input:
+                        payload = {
+                            "admin_email": st.session_state.user_email,
+                            "target_email": target_user_reset.strip().lower(),
+                            "new_password": new_password_input
+                        }
+                        with st.spinner("Overwriting encryption fields..."):
+                            try:
+                                reset_res = requests.post(f"{BACKEND_URL}/admin/users/reset-password", json=payload, timeout=5)
+                                if reset_res.status_code == 200:
+                                    st.success(f"✅ Modified: {reset_res.json()['message']}")
+                                else:
+                                    st.error(f"❌ Rejected: {reset_res.json().get('detail', 'Override blocked.')}")
+                            except Exception as err:
+                                st.error(f"API Hook Malfunction: {err}")
+                    else:
+                        st.warning("Please define both target identity email and password properties.")
 
     elif app_mode == "🔍 Knowledge Gap Reports":
         st.title("🔍 Automated Document Coverage & Knowledge Gap Logs")
