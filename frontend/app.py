@@ -16,35 +16,9 @@ if "user_name" not in st.session_state: st.session_state.user_name = None
 if "user_role" not in st.session_state: st.session_state.user_role = None
 if "active_session_id" not in st.session_state: st.session_state.active_session_id = None
 
-# --- GLOBAL SYSTEM UI HIGHLIGHTING & COMPLETE BRANDING REMOVAL ---
+# --- GLOBAL SYSTEM UI HIGHLIGHTING INJECTION ---
 st.markdown("""
 <style>
-    /* 🛡️ COMPLETE BRANDING REMOVAL: Wipe out Streamlit menus, options, toolbars and decoration lines */
-    div[data-testid="stToolbar"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    header[data-testid="stHeader"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    div[data-testid="stAppToolbar"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    
-    /* Hide the top colored decoration line strip */
-    div[data-testid="stDecoration"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    
-    /* Hide the bottom footer text block globally */
-    footer {
-        visibility: hidden !important;
-        display: none !important;
-    }
-
     /* Premium green glow highlight for validated, active submit buttons */
     div.stButton > button:enabled, .auth-btn-container button.activated-glow {
         background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important; 
@@ -99,6 +73,25 @@ def is_valid_email(email: str) -> bool:
 if st.session_state.token is None:
     st.markdown("""
     <style>
+        /* 🛡️ CONDITIONALLY HIDE TOP OPTIONS ROW ONLY ON LOGIN / REGISTER PAGE */
+        header[data-testid="stHeader"] {
+            display: none !important;
+        }
+        
+        /* Hide the bottom footer text block on the login view */
+        footer {
+            visibility: hidden !important;
+            display: none !important;
+        }
+        
+        /* 🛠️ NEW FIX: Completely wipe out the bottom right floating Streamlit Cloud manage button */
+        #streamlitAppPortalsContainer, .stAppDeployButton, div[class^="st-emotion-cache"] > button[title="Manage app"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
         [data-testid="stHorizontalBlock"] {
             margin-top: 3vh !important; 
             padding-bottom: 2vh !important;
