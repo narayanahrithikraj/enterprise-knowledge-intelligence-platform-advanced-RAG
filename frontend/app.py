@@ -19,11 +19,19 @@ if "active_session_id" not in st.session_state: st.session_state.active_session_
 # --- GLOBAL SYSTEM UI HIGHLIGHTING & TARGETED REMOVAL ---
 st.markdown("""
 <style>
-    /* 🛡️ TARGETED REMOVAL: Hide ONLY GitHub specific utilities (Star & Edit options) */
+    /* 🛡️ TARGETED REMOVAL: Hide ONLY GitHub specific utilities (Star & Edit options) from Toolbar */
     div[data-testid="stAppToolbar"] a[href*="github.com"] {
         display: none !important;
     }
     header[data-testid="stHeader"] a[href*="github.com"] {
+        display: none !important;
+    }
+    
+    /* 🛡️ TARGETED REMOVAL: Hide the injected GitHub repository notice links from the Main Tab Content Panel */
+    div[data-testid="stVerticalBlock"] a[href*="github.com"] {
+        display: none !important;
+    }
+    div[data-testid="stMarkdownContainer"] a[href*="github.com"] {
         display: none !important;
     }
     
