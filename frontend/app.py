@@ -16,11 +16,14 @@ if "user_name" not in st.session_state: st.session_state.user_name = None
 if "user_role" not in st.session_state: st.session_state.user_role = None
 if "active_session_id" not in st.session_state: st.session_state.active_session_id = None
 
-# --- GLOBAL SYSTEM UI HIGHLIGHTING & REMOVAL INJECTION ---
+# --- GLOBAL SYSTEM UI HIGHLIGHTING & TARGETED REMOVAL ---
 st.markdown("""
 <style>
-    /* 🛠️ REMOVE STREAMLIT CLOUD HEADER & VISUAL UTILITIES (Star, Edit, Menu) */
-    header[data-testid="stHeader"] {
+    /* 🛡️ TARGETED REMOVAL: Hide ONLY GitHub specific utilities (Star & Edit options) */
+    div[data-testid="stAppToolbar"] a[href*="github.com"] {
+        display: none !important;
+    }
+    header[data-testid="stHeader"] a[href*="github.com"] {
         display: none !important;
     }
     
