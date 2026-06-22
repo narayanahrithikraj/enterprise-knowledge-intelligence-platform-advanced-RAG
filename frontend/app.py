@@ -7,7 +7,7 @@ import re
 
 # Core configuration configurations matching standard layout requirements
 st.set_page_config(page_title="Enterprise Knowledge Platform", page_icon="🛡️", layout="wide")
-BACKEND_URL = "http://backend:8000/api/v1"
+BACKEND_URL = st.secrets.get("BACKEND_URL", "http://localhost:8000")
 
 # --- 1️⃣ STATE INITIALIZATION MATRIX ---
 if "token" not in st.session_state: st.session_state.token = None
