@@ -31,6 +31,9 @@ app.add_middleware(
 
 api_router = APIRouter()
 
+# 🔒 LIVE IN-MEMORY TRACKING MATRIX FOR SINGLE-USE ADMIN TOKENS
+ACTIVE_ADMIN_TOKENS = set()
+
 # --- SYSTEM IDENTITIES AUTO-SEEDING ROUTINE ---
 def seed_system_identities():
     db = next(get_db())
@@ -88,7 +91,7 @@ class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
 
-# NEW: Admin Request Validation Payloads
+# Admin Request Validation Payloads
 class AdminResetPasswordRequest(BaseModel):
     admin_email: str
     target_email: str
@@ -97,6 +100,10 @@ class AdminResetPasswordRequest(BaseModel):
 class AdminDeleteUserRequest(BaseModel):
     admin_email: str
     target_email: str
+
+# Token Payload Bindings
+class TokenVerificationRequest(BaseModel):
+    token: str
 
 # --- IDENTITY & AUTHENTICATION ENDPOINTS ---
 @api_router.post("/auth/login")
@@ -284,44 +291,56 @@ async def get_users(db: Session = Depends(get_db)):
 async def get_knowledge_gaps(db: Session = Depends(get_db)):
     return db.query(DBKnowledgeGap).all()
 
-# 🛠️ FEATURE ENHANCEMENT: SECURE ADMINISTRATIVE PASSWORD RESET ROUTE
 @api_router.post("/admin/users/reset-password")
 async def admin_reset_user_password(payload: AdminResetPasswordRequest, db: Session = Depends(get_db)):
-    # 1. Enforce strict Admin Authorization checks
     requester = db.query(DBUser).filter(DBUser.email == payload.admin_email).first()
     if not requester or requester.role != "Admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access Denied: Only platform administrators can reset profile passwords.")
     
-    # 2. Extract target user identity
     target_user = db.query(DBUser).filter(DBUser.email == payload.target_email).first()
     if not target_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Operation Failure: Target user profile does not exist.")
     
-    # 3. Rotate credentials securely
     target_user.password = payload.new_password
     db.commit()
     return {"status": "success", "message": f"Security access credentials for user '{payload.target_email}' successfully rotated."}
 
-# 🛠️ FEATURE ENHANCEMENT: SECURE ADMINISTRATIVE USER PROFILE DELETION ROUTE
 @api_router.post("/admin/users/delete")
 async def admin_delete_user(payload: AdminDeleteUserRequest, db: Session = Depends(get_db)):
-    # 1. Enforce strict Admin Authorization checks
     requester = db.query(DBUser).filter(DBUser.email == payload.admin_email).first()
     if not requester or requester.role != "Admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access Denied: Only platform administrators have destructive clearance parameters.")
     
-    # 2. Prevent administrative safety failure (Self-deletion)
     if payload.admin_email.lower() == payload.target_email.lower():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Safety Enforcement Intercept: You cannot delete your own active administrator profile.")
     
-    # 3. Extract target user identity
     target_user = db.query(DBUser).filter(DBUser.email == payload.target_email).first()
     if not target_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Operation Failure: Target user profile does not exist.")
     
-    # 4. Remove record from persistent storage context completely
     db.delete(target_user)
     db.commit()
     return {"status": "success", "message": f"User profile associated with '{payload.target_email}' has been permanently purged from the system configuration."}
+
+# --- 🛠️ NEW TOKENS SYSTEM LIFECYCLE MANAGEMENT ENDPOINTS ---
+@api_router.post("/admin/generate-token")
+async def admin_generate_token():
+    # Generate a cryptographically distinct single-use token structure
+    new_token = f"ADMIN_SECURE_{uuid.uuid4().hex[:8].upper()}"
+    ACTIVE_ADMIN_TOKENS.add(new_token)
+    return {"token": new_token}
+
+@api_router.post("/tokens/validate")
+async def validate_admin_token(payload: TokenVerificationRequest):
+    if payload.token not in ACTIVE_ADMIN_TOKENS:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization Rejected: Invalid or Expired Admin Token.")
+    return {"status": "valid"}
+
+@api_router.post("/tokens/consume")
+async def consume_admin_token(payload: TokenVerificationRequest):
+    if payload.token in ACTIVE_ADMIN_TOKENS:
+        ACTIVE_ADMIN_TOKENS.remove(payload.token)
+        return {"status": "consumed"}
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Token not active.")
 
 app.include_router(api_router)
