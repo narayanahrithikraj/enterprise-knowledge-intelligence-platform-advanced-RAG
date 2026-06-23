@@ -84,7 +84,7 @@ if st.session_state.token is None:
             display: none !important;
         }
         
-        /* 🛠️ NEW FIX: Completely wipe out the bottom right floating Streamlit Cloud manage button */
+        /* Completely wipe out the bottom right floating Streamlit Cloud manage button */
         #streamlitAppPortalsContainer, .stAppDeployButton, div[class^="st-emotion-cache"] > button[title="Manage app"] {
             display: none !important;
             visibility: hidden !important;
@@ -180,19 +180,24 @@ if st.session_state.token is None:
             st.write("")
             if st.button("Authenticate Session", type="primary", width="stretch"):
                 if login_email and login_password:
-                    try:
-                        res = requests.post(f"{BACKEND_URL}/auth/login", json={"email": login_email, "password": login_password}, timeout=5)
-                        if res.status_code == 200:
-                            data = res.json()
-                            st.session_state.token = data["access_token"]
-                            st.session_state.user_email = data["user"]["email"]
-                            st.session_state.user_name = data["user"].get("full_name", data["user"]["email"])
-                            st.session_state.user_role = data["user"]["role"]
-                            st.success("Access Authorized! Opening workspace analytics...")
-                            time.sleep(0.5)
-                            st.rerun()
-                        else: st.error("❌ Authentication Blocked: Invalid email or password.")
-                    except Exception as e: st.error(f"Network processing exception: {e}")
+                    # EXTENDED TIMEOUT WITH LOADING NOTIFICATION
+                    with st.spinner("📡 Connecting to secure cluster framework... (Free tier waking up might take 30-40 seconds)"):
+                        try:
+                            res = requests.post(f"{BACKEND_URL}/auth/login", json={"email": login_email, "password": login_password}, timeout=45)
+                            if res.status_code == 200:
+                                data = res.json()
+                                st.session_state.token = data["access_token"]
+                                st.session_state.user_email = data["user"]["email"]
+                                st.session_state.user_name = data["user"].get("full_name", data["user"]["email"])
+                                st.session_state.user_role = data["user"]["role"]
+                                st.success("Access Authorized! Opening workspace analytics...")
+                                time.sleep(0.5)
+                                st.rerun()
+                            else: st.error("❌ Authentication Blocked: Invalid email or password.")
+                        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+                            st.error("⏳ Server Spin-Up Delayed: The secure cloud cluster is currently waking up from an idle sleep cycle. Please wait 10 seconds and click 'Authenticate Session' again.")
+                        except Exception as e: 
+                            st.error(f"Network processing exception: {e}")
                 
         with auth_tabs[1]:
             reg_name = st.text_input("Full Name", placeholder="Username", key="reg_name_input").strip()
@@ -222,22 +227,28 @@ if st.session_state.token is None:
             if st.button("Register Corporate Identity", type="primary", width="stretch"):
                 if reg_name and reg_email and reg_password:
                     if reg_role == "Admin":
-                        try:
-                            val_res = requests.post(f"{BACKEND_URL}/tokens/validate", json={"token": admin_token_input}, timeout=5)
-                            if val_res.status_code == 200:
-                                signup_res = requests.post(f"{BACKEND_URL}/auth/signup", json={"email": reg_email, "password": reg_password, "full_name": reg_name, "role": reg_role}, timeout=5)
-                                if signup_res.status_code == 201:
-                                    requests.post(f"{BACKEND_URL}/tokens/consume", json={"token": admin_token_input}, timeout=5)
-                                    st.success("🎉 Admin identity successfully generated! Proceed to sign in.")
-                                else: st.error("❌ Registration rejected: Profile identity already exists.")
-                            else: st.error("❌ Authorization Rejected: Invalid or Expired Admin Token.")
-                        except Exception as e: st.error(f"Security processing exception: {e}")
+                        with st.spinner("Verifying administration token signatures..."):
+                            try:
+                                val_res = requests.post(f"{BACKEND_URL}/tokens/validate", json={"token": admin_token_input}, timeout=45)
+                                if val_res.status_code == 200:
+                                    signup_res = requests.post(f"{BACKEND_URL}/auth/signup", json={"email": reg_email, "password": reg_password, "full_name": reg_name, "role": reg_role}, timeout=45)
+                                    if signup_res.status_code == 201:
+                                        requests.post(f"{BACKEND_URL}/tokens/consume", json={"token": admin_token_input}, timeout=45)
+                                        st.success("🎉 Admin identity successfully generated! Proceed to sign in.")
+                                    else: st.error("❌ Registration rejected: Profile identity already exists.")
+                                else: st.error("❌ Authorization Rejected: Invalid or Expired Admin Token.")
+                            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+                                st.error("⏳ Container spin-up delayed. The platform backend is waking up from its idle cycle. Please wait a moment and try submitting again.")
+                            except Exception as e: st.error(f"Security processing exception: {e}")
                     else:
-                        try:
-                            res = requests.post(f"{BACKEND_URL}/auth/signup", json={"email": reg_email, "password": reg_password, "full_name": reg_name, "role": reg_role}, timeout=5)
-                            if res.status_code == 201: st.success("🎉 Registered successfully! Proceed to sign in.")
-                            else: st.error("❌ Registration rejected: Profile identity already exists.")
-                        except Exception as e: st.error(f"Handshake error: {e}")
+                        with st.spinner("Syncing data fields..."):
+                            try:
+                                res = requests.post(f"{BACKEND_URL}/auth/signup", json={"email": reg_email, "password": reg_password, "full_name": reg_name, "role": reg_role}, timeout=45)
+                                if res.status_code == 201: st.success("🎉 Registered successfully! Proceed to sign in.")
+                                else: st.error("❌ Registration rejected: Profile identity already exists.")
+                            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+                                st.error("⏳ Container spin-up delayed. The platform backend is waking up from its idle cycle. Please wait a moment and try submitting again.")
+                            except Exception as e: st.error(f"Handshake error: {e}")
 
 # ======================================================================================
 # 🚀 PHASE 2: NATIVE PLATFORM WORKSPACE VIEW (LOGGED IN STATE)
@@ -271,7 +282,7 @@ else:
                             "old_password": current_pass,
                             "new_password": new_pass
                         }
-                        change_res = requests.post(f"{BACKEND_URL}/auth/change-password", json=pwd_payload, timeout=5)
+                        change_res = requests.post(f"{BACKEND_URL}/auth/change-password", json=pwd_payload, timeout=45)
                         if change_res.status_code == 200:
                             st.success("🎉 Password updated successfully!")
                             time.sleep(0.6)
@@ -289,7 +300,7 @@ else:
         st.title("📊 Enterprise Knowledge Analytics Command")
         st.write("---")
         try:
-            metrics = requests.get(f"{BACKEND_URL}/analytics", timeout=5).json()
+            metrics = requests.get(f"{BACKEND_URL}/analytics", timeout=45).json()
             card1, card2, card3 = st.columns(3)
             with card1: st.metric("Total Indexed Files Base", metrics.get("total_documents_processed", 0))
             with card2: st.metric("Total System Queries Evaluated", metrics.get("total_queries_served", 0))
@@ -313,7 +324,7 @@ else:
     elif app_mode == "💬 Secure Agentic Chat":
         st.title("💬 Secure Multi-Turn Agentic Assistant")
         st.write("---")
-        try: chat_sessions = requests.get(f"{BACKEND_URL}/chat/sessions", headers=auth_headers, timeout=5).json()
+        try: chat_sessions = requests.get(f"{BACKEND_URL}/chat/sessions", headers=auth_headers, timeout=45).json()
         except Exception: chat_sessions = []
             
         chat_sidebar, chat_window = st.columns([1, 3])
@@ -321,7 +332,7 @@ else:
             st.subheader("📁 Discussion Channels")
             new_title = st.text_input("Thread Topic Subject:")
             if st.button("➕ Open Fresh Chat Stream", width="stretch") and new_title.strip():
-                requests.post(f"{BACKEND_URL}/chat/sessions", json={"title": new_title}, headers=auth_headers, timeout=5)
+                requests.post(f"{BACKEND_URL}/chat/sessions", json={"title": new_title}, headers=auth_headers, timeout=45)
                 st.rerun()
             st.write("---")
             if chat_sessions:
@@ -336,7 +347,7 @@ else:
         with chat_window:
             if st.session_state.active_session_id is None: st.info("👈 Please select or open an active conversation stream thread loop to communicate.")
             else:
-                try: messages = requests.get(f"{BACKEND_URL}/chat/sessions/{st.session_state.active_session_id}/messages", headers=auth_headers, timeout=5).json()
+                try: messages = requests.get(f"{BACKEND_URL}/chat/sessions/{st.session_state.active_session_id}/messages", headers=auth_headers, timeout=45).json()
                 except Exception: messages = []
                 for msg in messages:
                     with st.chat_message(msg["role"]):
@@ -348,7 +359,7 @@ else:
                     with st.chat_message("user"): st.markdown(prompt)
                     with st.chat_message("assistant"):
                         with st.spinner("Analyzing parameters bounds..."):
-                            res = requests.post(f"{BACKEND_URL}/query", json={"question": prompt, "session_id": st.session_state.active_session_id}, headers=auth_headers, timeout=10)
+                            res = requests.post(f"{BACKEND_URL}/query", json={"question": prompt, "session_id": st.session_state.active_session_id}, headers=auth_headers, timeout=45)
                             if res.status_code == 200: st.rerun()
                             else: st.error(res.text)
 
@@ -364,13 +375,13 @@ else:
                 files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/octet-stream")}
                 form_payload = {"category": doc_category}
                 with st.spinner("Ingesting vectors..."):
-                    res = requests.post(f"{BACKEND_URL}/upload", files=files, data=form_payload, headers=auth_headers, timeout=15)
+                    res = requests.post(f"{BACKEND_URL}/upload", files=files, data=form_payload, headers=auth_headers, timeout=45)
                     if res.status_code == 200: st.success(res.json()["message"]); st.rerun()
                     else: st.error(res.text)
             st.write("---")
             st.subheader("🗄️ Ingested Files Metadata Ledger Base")
             try:
-                res = requests.get(f"{BACKEND_URL}/documents", headers=auth_headers, timeout=5)
+                res = requests.get(f"{BACKEND_URL}/documents", headers=auth_headers, timeout=45)
                 if res.status_code == 200:
                     inventory = res.json()
                     if not inventory: st.info("No documents are currently mapped to the repository vector database collection stores.")
@@ -382,7 +393,7 @@ else:
                             with col3: st.caption(f"Size: {doc['file_size_kb']} KB")
                             with col4:
                                 if st.button("Delete", key=f"del_{doc['id']}", width="stretch"):
-                                    if requests.delete(f"{BACKEND_URL}/documents/{doc['id']}", headers=auth_headers, timeout=5).status_code == 200: st.success("Deleted!"); st.rerun()
+                                    if requests.delete(f"{BACKEND_URL}/documents/{doc['id']}", headers=auth_headers, timeout=45).status_code == 200: st.success("Deleted!"); st.rerun()
                 else: st.error("🔒 Access Denied: Administrative clearance required.")
             except Exception as e: st.error(f"Inventory failure: {e}")
 
@@ -394,14 +405,14 @@ else:
             st.subheader("🔑 Cryptographic Single-Use Admin Token Provisioner")
             if st.button("Generate Secure Admin Token", type="primary"):
                 try:
-                    token_res = requests.post(f"{BACKEND_URL}/admin/generate-token", headers=auth_headers, timeout=5)
+                    token_res = requests.post(f"{BACKEND_URL}/admin/generate-token", headers=auth_headers, timeout=45)
                     if token_res.status_code == 200: st.success(f"🔑 **New Admin Token Generated:** `{token_res.json()['token']}`")
                     else: st.error("Failed to compile secure network token layer.")
                 except Exception as e: st.error(f"Token generation failed: {e}")
             st.write("---")
             st.markdown("### Active Workspace Identities Ledger")
             try:
-                res = requests.get(f"{BACKEND_URL}/admin/users", headers=auth_headers, timeout=5)
+                res = requests.get(f"{BACKEND_URL}/admin/users", headers=auth_headers, timeout=45)
                 if res.status_code == 200:
                     user_list = res.json()
                     for u in user_list:
@@ -417,7 +428,7 @@ else:
                                         "target_email": u['email']
                                     }
                                     with st.spinner("Purging record..."):
-                                        del_res = requests.post(f"{BACKEND_URL}/admin/users/delete", json=payload, timeout=5)
+                                        del_res = requests.post(f"{BACKEND_URL}/admin/users/delete", json=payload, timeout=45)
                                         if del_res.status_code == 200: 
                                             st.success("Revoked!")
                                             time.sleep(0.5)
@@ -446,7 +457,7 @@ else:
                         }
                         with st.spinner("Overwriting encryption fields..."):
                             try:
-                                reset_res = requests.post(f"{BACKEND_URL}/admin/users/reset-password", json=payload, timeout=5)
+                                reset_res = requests.post(f"{BACKEND_URL}/admin/users/reset-password", json=payload, timeout=45)
                                 if reset_res.status_code == 200:
                                     st.success(f"✅ Modified: {reset_res.json()['message']}")
                                 else:
@@ -462,7 +473,7 @@ else:
         if st.session_state.user_role != "Admin": st.error("🔒 Access Denied.")
         else:
             try:
-                res = requests.get(f"{BACKEND_URL}/admin/knowledge-gaps", headers=auth_headers, timeout=5)
+                res = requests.get(f"{BACKEND_URL}/admin/knowledge-gaps", headers=auth_headers, timeout=45)
                 if res.status_code == 200:
                     gap_logs = res.json()
                     if not gap_logs: st.success("✨ All queries matched! No document repository gaps detected.")
