@@ -1,78 +1,68 @@
 import os
-import socket
+import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.exc import OperationalError
 
-def discover_active_db_host() -> str:
-    """Scans the internal Docker container network to auto-resolve the correct database hostname."""
-    common_hosts = ["postgres_db", "postgres", "db", "localhost"]
-    for host in common_hosts:
-        try:
-            with socket.create_connection((host, 5432), timeout=1.0):
-                return host
-        except (socket.timeout, ConnectionRefusedError, socket.gaierror):
-            continue
-    return None
+# 1. Directly target your production Neon connection environment string
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Auto-resolve host network location parameters
-DATABASE_HOST = discover_active_db_host()
-DATABASE_USER = os.getenv("DATABASE_USER", "postgres")
-DATABASE_NAME = os.getenv("DATABASE_NAME", "postgres")
+# 🛠️ AUTOMATIC PREFIX REPAIR: Resolves SQLAlchemy 1.4/2.0 requirements 
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Complete checklist of common passwords to attempt connection
-passwords_to_evaluate = [
-    os.getenv("DATABASE_PASSWORD"),
-    os.getenv("POSTGRES_PASSWORD"),
-    "postgres",
-    "password",
-    "password123",
-    "admin",
-    "admin123",
-    "root",
-    "root123",
-    "postgres123",
-    ""
-]
-passwords_to_evaluate = [p for p in passwords_to_evaluate if p is not None]
+# 2. Establish fallback parameters if the cloud configuration is missing entirely
+if not DATABASE_URL:
+    print("⚠️ DATABASE_URL variable not detected in environment. Defaulting to local workspace fallback.")
+    DATABASE_URL = "sqlite:///./platform_persistence.db"
 
-engine = None
-handshake_successful = False
-
-if DATABASE_HOST:
-    print(f"📡 Database host discovered at '{DATABASE_HOST}'. Testing credential matching matrix...")
-    for candidate_password in passwords_to_evaluate:
-        target_url = f"postgresql://{DATABASE_USER}:{candidate_password}@{DATABASE_HOST}:5432/{DATABASE_NAME}"
-        try:
-            temporary_engine = create_engine(target_url, pool_pre_ping=True)
-            with temporary_engine.connect() as connection:
-                print(f"✅ Connection successful! Linked to PostgreSQL container using matched credentials.")
-                engine = temporary_engine
-                handshake_successful = True
-                break
-        except OperationalError as e:
-            if "password authentication failed" in str(e):
-                continue
-            else:
-                break
-
-# AUTOMATED SELF-HEALING FALLBACK LAYER
-if not handshake_successful:
-    print("⚠️ PostgreSQL password authentication failed or host container is isolated.")
-    print("🚀 Activating self-healing route: Routing platform persistence layer to localized SQLite instance.")
-    
-    SQLITE_URL = "sqlite:////app/platform_persistence.db"
+# 3. Compile the structural engine with serverless-optimized connection configurations
+if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
-        SQLITE_URL, 
+        DATABASE_URL, 
         connect_args={"check_same_thread": False}
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        pool_size=5,
+        max_overflow=10,
+        pool_timeout=30,
+        pool_recycle=1800,
+        pool_pre_ping=True  # 🛡️ Forces an active verification ping before firing requests
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+# 4. Thread-safe execution dependency container mapping
 def get_db():
+    """
+    Scoped resource lifecycle dependency generator loop.
+    Guarantees clean transaction check-ins and connection pool releases.
+    """
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+def verify_cloud_handshake(max_retries: int = 5, delay_seconds: int = 3) -> bool:
+    """
+    Executes an explicit startup verification handshake against Neon PostgreSQL.
+    Bypasses environmental latency races without breaking application boot.
+    """
+    print("📡 Testing production database connection pool parameters...")
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Execute an ultra-lightweight check query to confirm backend responsiveness
+            with engine.connect() as connection:
+                connection.execute("SELECT 1")
+            print("🚀 PostgreSQL Server Handshake Complete. Relational Schema Active.")
+            return True
+        except Exception as e:
+            print(f"⏳ Connection attempt ({attempt}/{max_retries}) unfulfilled: {str(e)}")
+            if attempt < max_retries:
+                time.sleep(delay_seconds)
+                
+    print("❌ Critical Path Failure: Cloud database framework completely unreachable.")
+    return False
