@@ -3,13 +3,14 @@ import uuid
 import json
 from datetime import datetime
 from typing import Optional, List
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, HTTPException, status, File, UploadFile, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 # Absolute container paths for structural resource mapping
-from app.db.session import engine, get_db
+from app.db.session import engine, get_db, verify_cloud_handshake
 from app.db.models import Base, DBUser, DBDocument, DBChatSession, DBChatMessage, DBKnowledgeGap
 
 # Specialized platform processing engines
@@ -17,21 +18,7 @@ from services.retrieval import hybrid_retrieve
 from services.guardrails import EnterpriseGuardrail
 from services.evaluation import RAGEvaluationEngine
 
-# --- INITIALIZE CORE APPLICATION MODULE ---
-app = FastAPI(title="Enterprise Knowledge Platform API", version="1.0.0")
-
-# --- 📡 HARDENED PRODUCTION CORS MIDDLEWARE MATRIX ---
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-api_router = APIRouter()
-
-# 🔒 LIVE IN-MEMORY TRACKING MATRIX FOR SINGLE-USE ADMIN TOKENS
+# --- LIVE IN-MEMORY TRACKING MATRIX FOR SINGLE-USE ADMIN TOKENS ---
 ACTIVE_ADMIN_TOKENS = set()
 
 # --- SYSTEM IDENTITIES AUTO-SEEDING ROUTINE ---
@@ -52,11 +39,20 @@ def seed_system_identities():
     finally:
         db.close()
 
-# --- 🚀 AUTOMATED LIFECYCLE DATABASE HANDSHAKE PROTOCOL ---
-@app.on_event("startup")
-def initialize_platform_infrastructure():
+# --- 🔄 MODERN LIFECYCLE CONTROLLER (THE PERMANENT PERSISTENCE FIX) ---
+@asynccontextmanager
+async def app_lifespan(app: FastAPI):
+    """
+    Handles sequential initialization execution frames.
+    Guarantees environment parameters are locked before processing transaction pools.
+    """
     print("🚀 [Self-Healing Grid] Initializing structural system checks...")
+    
+    # 1. Run the safe handshake loop against Neon Cloud before running schema updates
+    handshake_successful = verify_cloud_handshake(max_retries=10, delay_seconds=3)
+    
     try:
+        # 2. Build or sync the tables directly inside Neon
         Base.metadata.create_all(bind=engine)
         print("✅ [Self-Healing Grid] Relational database schemas successfully synchronized.")
         seed_system_identities()
@@ -64,9 +60,26 @@ def initialize_platform_infrastructure():
         print(f"❌ [Self-Healing Grid] Infrastructure initialization failed: {e}")
 
     print("🚀 LangGraph Agentic Engine Fully Compiled and Operational.")
-    print("📡 Connecting to PostgreSQL Server (Attempt 1/10)...")
-    print("🚀 PostgreSQL Server Handshake Complete. Relational Schema Active.")
-    print("🚀 Relational Schema Complete. Platform Ready.")
+    yield
+    print("🛑 Shutting down system execution matrix...")
+
+# --- INITIALIZE CORE APPLICATION ENGINE ---
+app = FastAPI(
+    title="Enterprise Knowledge Platform API", 
+    version="1.0.0",
+    lifespan=app_lifespan # Injects the fixed startup lifecycle manager
+)
+
+# --- 📡 HARDENED PRODUCTION CORS MIDDLEWARE MATRIX ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+api_router = APIRouter()
 
 # --- DATA BINDING SCHEMAS ---
 class LoginRequest(BaseModel):
@@ -91,7 +104,6 @@ class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
 
-# Admin Request Validation Payloads
 class AdminResetPasswordRequest(BaseModel):
     admin_email: str
     target_email: str
@@ -101,7 +113,6 @@ class AdminDeleteUserRequest(BaseModel):
     admin_email: str
     target_email: str
 
-# Token Payload Bindings
 class TokenVerificationRequest(BaseModel):
     token: str
 
@@ -257,7 +268,7 @@ async def get_documents(db: Session = Depends(get_db)):
 async def upload_document(file: UploadFile = File(...), category: str = Form("General"), db: Session = Depends(get_db)):
     fname = file.filename.lower()
     if "sql" in fname or "join" in fname:
-        extracted_text = "Relational database operations mapping documentation. Details structured foreign key synchronization rules and standard INNER/LEFT lookup optimization paths for system engineering branches."
+        extracted_text = "Relational database operations documentation. Details structured foreign key synchronization rules and standard INNER/LEFT lookup optimization paths for system engineering branches."
     elif "sop" in fname or "tech" in fname:
         extracted_text = "Advanced engineering architecture rules sheet detailing vector embedding pipeline specifications and hybrid sparse-keyword retrieval constraints."
     else:
@@ -268,7 +279,7 @@ async def upload_document(file: UploadFile = File(...), category: str = Form("Ge
         filename=file.filename,
         category=category,
         file_size_kb=54,
-        text=extracted_text
+        text=extracted_text # Saves document data directly to your Neon SQL row!
     )
     db.add(new_doc)
     db.commit()
@@ -322,10 +333,9 @@ async def admin_delete_user(payload: AdminDeleteUserRequest, db: Session = Depen
     db.commit()
     return {"status": "success", "message": f"User profile associated with '{payload.target_email}' has been permanently purged from the system configuration."}
 
-# --- 🛠️ NEW TOKENS SYSTEM LIFECYCLE MANAGEMENT ENDPOINTS ---
+# --- TOKENS SYSTEM LIFECYCLE MANAGEMENT ENDPOINTS ---
 @api_router.post("/admin/generate-token")
 async def admin_generate_token():
-    # Generate a cryptographically distinct single-use token structure
     new_token = f"ADMIN_SECURE_{uuid.uuid4().hex[:8].upper()}"
     ACTIVE_ADMIN_TOKENS.add(new_token)
     return {"token": new_token}
