@@ -1,12 +1,11 @@
 import os
-import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 # 1. Directly target your production Neon connection environment string
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# 🛠️ AUTOMATIC PREFIX REPAIR: Resolves SQLAlchemy 1.4/2.0 requirements 
+# 🛠️ AUTOMATIC PREFIX REPAIR: Resolves SQLAlchemy 1.4/2.0 dialect requirements 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -24,11 +23,11 @@ if DATABASE_URL.startswith("sqlite"):
 else:
     engine = create_engine(
         DATABASE_URL,
-        pool_size=5,
-        max_overflow=10,
-        pool_timeout=30,
-        pool_recycle=1800,
-        pool_pre_ping=True  # 🛡️ Forces an active verification ping before firing requests
+        pool_size=10,          # Warm connection pool links to accommodate active request streams
+        max_overflow=20,       # Bandwidth limits to comfortably handle request spikes
+        pool_timeout=15,       # Fast fail-safe value to drop stalled connections early instead of hanging
+        pool_recycle=600,      # Recycle stale links to prevent silent idle drops from serverless hosts
+        pool_pre_ping=True     # 🛡️ Native lightweight check query run automatically before executing requests
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -45,24 +44,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-def verify_cloud_handshake(max_retries: int = 5, delay_seconds: int = 3) -> bool:
-    """
-    Executes an explicit startup verification handshake against Neon PostgreSQL.
-    Bypasses environmental latency races without breaking application boot.
-    """
-    print("📡 Testing production database connection pool parameters...")
-    for attempt in range(1, max_retries + 1):
-        try:
-            # Execute an ultra-lightweight check query to confirm backend responsiveness
-            with engine.connect() as connection:
-                connection.execute("SELECT 1")
-            print("🚀 PostgreSQL Server Handshake Complete. Relational Schema Active.")
-            return True
-        except Exception as e:
-            print(f"⏳ Connection attempt ({attempt}/{max_retries}) unfulfilled: {str(e)}")
-            if attempt < max_retries:
-                time.sleep(delay_seconds)
-                
-    print("❌ Critical Path Failure: Cloud database framework completely unreachable.")
-    return False
