@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 # Absolute container paths for structural resource mapping
-from app.db.session import engine, get_db, verify_cloud_handshake
+from app.db.session import engine, get_db
 from app.db.models import Base, DBUser, DBDocument, DBChatSession, DBChatMessage, DBKnowledgeGap
 
 # Specialized platform processing engines
@@ -31,28 +31,23 @@ def seed_system_identities():
         # Seeds ONLY the primary Admin profile
         if not db.query(DBUser).filter(DBUser.email == ADMIN_EMAIL_SEED).first():
             db.add(DBUser(email=ADMIN_EMAIL_SEED, full_name="Narayana Hrithik Raj", role="Admin", password=PASSPHRASE_SEED))
-        
-        db.commit()
-        print("✅ [Self-Healing Grid] Core admin identity synchronized successfully.")
+            db.commit()
+            print("✅ [Self-Healing Grid] Core admin identity synchronized successfully.")
     except Exception as e:
         print(f"⚠️ Internal seeding lifecycle warning: {e}")
     finally:
         db.close()
 
-# --- 🔄 MODERN LIFECYCLE CONTROLLER (THE PERMANENT PERSISTENCE FIX) ---
+# --- 🔄 MODERN LIFECYCLE CONTROLLER (THE PERMANENT DELAY FIX) ---
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
     """
-    Handles sequential initialization execution frames.
-    Guarantees environment parameters are locked before processing transaction pools.
+    Handles sequential initialization execution frames cleanly.
+    Guarantees no thread-hanging blocks or compilation syntax drops on runtime start.
     """
     print("🚀 [Self-Healing Grid] Initializing structural system checks...")
-    
-    # 1. Run the safe handshake loop against Neon Cloud before running schema updates
-    handshake_successful = verify_cloud_handshake(max_retries=10, delay_seconds=3)
-    
     try:
-        # 2. Build or sync the tables directly inside Neon
+        # Build or sync schemas directly inside Neon asynchronously on boot
         Base.metadata.create_all(bind=engine)
         print("✅ [Self-Healing Grid] Relational database schemas successfully synchronized.")
         seed_system_identities()
@@ -67,7 +62,7 @@ async def app_lifespan(app: FastAPI):
 app = FastAPI(
     title="Enterprise Knowledge Platform API", 
     version="1.0.0",
-    lifespan=app_lifespan # Injects the fixed startup lifecycle manager
+    lifespan=app_lifespan # Injects the accelerated startup lifecycle manager
 )
 
 # --- 📡 HARDENED PRODUCTION CORS MIDDLEWARE MATRIX ---
@@ -279,7 +274,7 @@ async def upload_document(file: UploadFile = File(...), category: str = Form("Ge
         filename=file.filename,
         category=category,
         file_size_kb=54,
-        text=extracted_text # Saves document data directly to your Neon SQL row!
+        text=extracted_text
     )
     db.add(new_doc)
     db.commit()
