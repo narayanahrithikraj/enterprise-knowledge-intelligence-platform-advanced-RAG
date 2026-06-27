@@ -9,7 +9,7 @@ import re
 st.set_page_config(page_title="Enterprise Knowledge Platform", page_icon="🛡️", layout="wide")
 BACKEND_URL = st.secrets.get("BACKEND_URL", "http://localhost:8000")
 
-# --- 1️⃣ STATE INITIALIZATION MATRIX ---
+# --- STATE INITIALIZATION MATRIX ---
 if "token" not in st.session_state: st.session_state.token = None
 if "user_email" not in st.session_state: st.session_state.user_email = None
 if "user_name" not in st.session_state: st.session_state.user_name = None  
@@ -68,7 +68,7 @@ def is_valid_email(email: str) -> bool:
     return bool(re.match(pattern, email))
 
 # ======================================================================================
-# 🔒 PHASE 1: IDENTITY GATEWAY LAYER (LOGGED OUT STATE)
+# PHASE 1: IDENTITY GATEWAY LAYER (LOGGED OUT STATE)
 # ======================================================================================
 if st.session_state.token is None:
     st.markdown("""
@@ -251,7 +251,7 @@ if st.session_state.token is None:
                             except Exception as e: st.error(f"Handshake error: {e}")
 
 # ======================================================================================
-# 🚀 PHASE 2: NATIVE PLATFORM WORKSPACE VIEW (LOGGED IN STATE)
+# PHASE 2: NATIVE PLATFORM WORKSPACE VIEW (LOGGED IN STATE)
 # ======================================================================================
 else:
     auth_headers = {"Authorization": f"Bearer {st.session_state.token}"}
@@ -438,7 +438,6 @@ else:
                             else: st.caption("Active Session")
             except Exception as e: st.error(f"User list fetch failure: {e}")
 
-            # --- 🛠️ OPTIMIZED: EXECUTIVE PASSWORD OVERRIDE PANEL ---
             st.write("---")
             st.markdown("### ⚙️ Executive Account Override Actions")
             st.caption("Perform direct, privileged root mutations across the live database profile registers.")
