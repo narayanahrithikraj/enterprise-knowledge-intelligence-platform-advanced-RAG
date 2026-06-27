@@ -36,7 +36,7 @@ An enterprise-grade, production-ready Advanced Retrieval-Augmented Generation (R
 ```text
     ┌─────────────────────────┐               ┌────────────────────────┐
     │    Streamlit UI         │  REST HTTP    │    FastAPI Backend     │
-    │  (Frontend Web App)    ├──────────────►│    (API Core Hub)      │
+    │  (Frontend Web App)     ├──────────────►│    (API Core Hub)      │
     └───────────┬─────────────┘   Payloads    └───────────┬────────────┘
                 │                                         │
                 ▼                                         ▼
