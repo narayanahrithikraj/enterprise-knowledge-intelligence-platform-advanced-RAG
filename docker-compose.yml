@@ -22,7 +22,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Clear isolation boundary separating vector storage from other service volumes
       - chroma_vector_data:/app/chroma_vector_db
     env_file:
       - .env
