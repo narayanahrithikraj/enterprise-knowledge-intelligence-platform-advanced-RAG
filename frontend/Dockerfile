@@ -5,7 +5,6 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Directly package UI presentation dependencies vectors
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir streamlit requests plotly pandas
 
