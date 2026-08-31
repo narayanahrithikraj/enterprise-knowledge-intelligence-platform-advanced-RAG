@@ -5,18 +5,15 @@ import pandas as pd
 import time
 import re
 
-# Core configuration configurations matching standard layout requirements
 st.set_page_config(page_title="Enterprise Knowledge Platform", page_icon="🛡️", layout="wide")
 BACKEND_URL = st.secrets.get("BACKEND_URL", "http://localhost:8000")
 
-# --- STATE INITIALIZATION MATRIX ---
 if "token" not in st.session_state: st.session_state.token = None
 if "user_email" not in st.session_state: st.session_state.user_email = None
 if "user_name" not in st.session_state: st.session_state.user_name = None  
 if "user_role" not in st.session_state: st.session_state.user_role = None
 if "active_session_id" not in st.session_state: st.session_state.active_session_id = None
 
-# --- GLOBAL SYSTEM UI HIGHLIGHTING INJECTION ---
 st.markdown("""
 <style>
     /* Premium green glow highlight for validated, active submit buttons */
@@ -62,14 +59,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- SYSTEM STABILIZATION UTILITIES ---
 def is_valid_email(email: str) -> bool:
     pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return bool(re.match(pattern, email))
 
-# ======================================================================================
 # PHASE 1: IDENTITY GATEWAY LAYER (LOGGED OUT STATE)
-# ======================================================================================
 if st.session_state.token is None:
     st.markdown("""
     <style>
@@ -180,7 +174,6 @@ if st.session_state.token is None:
             st.write("")
             if st.button("Authenticate Session", type="primary", width="stretch"):
                 if login_email and login_password:
-                    # EXTENDED TIMEOUT WITH LOADING NOTIFICATION
                     with st.spinner("📡 Connecting to secure cluster framework... (Free tier waking up might take 30-40 seconds)"):
                         try:
                             res = requests.post(f"{BACKEND_URL}/auth/login", json={"email": login_email, "password": login_password}, timeout=45)
@@ -250,9 +243,7 @@ if st.session_state.token is None:
                                 st.error("⏳ Container spin-up delayed. The platform backend is waking up from its idle cycle. Please wait a moment and try submitting again.")
                             except Exception as e: st.error(f"Handshake error: {e}")
 
-# ======================================================================================
 # PHASE 2: NATIVE PLATFORM WORKSPACE VIEW (LOGGED IN STATE)
-# ======================================================================================
 else:
     auth_headers = {"Authorization": f"Bearer {st.session_state.token}"}
     with st.sidebar:
