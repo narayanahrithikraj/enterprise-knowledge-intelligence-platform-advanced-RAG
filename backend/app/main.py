@@ -38,7 +38,7 @@ def seed_system_identities():
     finally:
         db.close()
 
-# --- 🔄 MODERN LIFECYCLE CONTROLLER (THE PERMANENT DELAY FIX) ---
+# --- MODERN LIFECYCLE CONTROLLER (THE PERMANENT DELAY FIX) ---
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
     """
@@ -65,7 +65,7 @@ app = FastAPI(
     lifespan=app_lifespan # Injects the accelerated startup lifecycle manager
 )
 
-# --- 📡 HARDENED PRODUCTION CORS MIDDLEWARE MATRIX ---
+# --- HARDENED PRODUCTION CORS MIDDLEWARE MATRIX ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -192,7 +192,7 @@ async def get_messages(session_id: str, db: Session = Depends(get_db)):
         })
     return formatted
 
-# --- 🔒 SECURITY-INTEGRATED PERSISTENT RAG PIPELINE ROUTE ---
+# --- SECURITY-INTEGRATED PERSISTENT RAG PIPELINE ROUTE ---
 @api_router.post("/query")
 async def execute_advanced_rag_pipeline(payload: QueryRequest, db: Session = Depends(get_db)):
     raw_prompt = payload.question
